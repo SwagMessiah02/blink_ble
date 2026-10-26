@@ -75,11 +75,7 @@ static uint16_t read_callback(hci_con_handle_t con_handler, uint16_t att_handler
     UNUSED(con_handler);
 
     if(att_handler == ATT_CHARACTERISTIC_12345678_1234_5678_1234_56789ABCFFFF_01_VALUE_HANDLE) {
-        printf("READ");
         uint8_t data = led_state == true ? 0x01 : 0x00;
-
-        printf("%d\n", data);
-
         return att_read_callback_handle_blob((uint8_t*)&led_state, sizeof(led_state), offset, buffer, size);
     }
 
