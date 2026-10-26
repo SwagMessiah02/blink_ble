@@ -25,8 +25,6 @@ bool led_state = false;
 bool cyw_led_state = false;
 bool le_notification_enabled;
 
-hci_con_handle_t con_handle;
-
 static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size) {
     UNUSED(size);
     UNUSED(channel);
