@@ -136,9 +136,12 @@ int main()
     setup();
 
     while (true) {
+        if(getchar() == 'E') break;
         async_context_poll(cyw43_arch_async_context());
         async_context_wait_for_work_until(cyw43_arch_async_context(), at_the_end_of_time);
     }
+
+    printf("Finishing the program\n");
 
     att_server_deinit();
 
