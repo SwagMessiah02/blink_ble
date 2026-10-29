@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include "btstack.h"
+#include "hci_dump_embedded_stdout.h"
 #include "pico/stdlib.h"
 #include "pico/cyw43_arch.h"
 #include "pico/btstack_cyw43.h"
@@ -8,15 +9,23 @@
 #define LED_PIN 12
 #define HEARTBEAT_PERIOD_MS 500
 #define HCI_TRUE_CONNECTION_COMPLETE 0x3E // Magic number. Don't ask why
+#define ADV_IND 0x06
 
 // Advertizing data must be 31 bytes long at top
-static uint8_t adv_data[] = {                                      
-    0x02, BLUETOOTH_DATA_TYPE_FLAGS, 0x06,  
-    0xA, BLUETOOTH_DATA_TYPE_COMPLETE_LOCAL_NAME, 'B', 'l', 'i', 'n', 'k', '_', 'b', 'l', 'e',  
-    0x03, BLUETOOTH_DATA_TYPE_COMPLETE_LIST_OF_16_BIT_SERVICE_CLASS_UUIDS, 0x1a, 0x18,
+static uint8_t adv_data[] = {
+    0x02, BLUETOOTH_DATA_TYPE_FLAGS, 0x06,
+    0x0A, BLUETOOTH_DATA_TYPE_COMPLETE_LOCAL_NAME, 'B','l','i','n','k','_','b','l','e',
+    0x02, BLUETOOTH_DATA_TYPE_TX_POWER_LEVEL, 0x09,
+    0x03, BLUETOOTH_DATA_TYPE_APPEARANCE, 0x02, 0x00,
+    0x03, BLUETOOTH_DATA_TYPE_COMPLETE_LIST_OF_16_BIT_SERVICE_CLASS_UUIDS, 0x1A, 0x18,
 };
 
+static uint8_t scan_resp_data[] = {
+    0x08, BLUETOOTH_DATA_TYPE_LE_BLUETOOTH_DEVICE_ADDRESS, 0xA4, 0x24, 0x0D, 0xC1, 0xCD, 0x28, 0x00,                               
+};  
+
 static const uint8_t adv_data_len = sizeof(adv_data);
+static const uint8_t scan_resp_data_len = sizeof(scan_resp_data);
 static btstack_timer_source_t heartbeat;
 static btstack_packet_callback_registration_t bstack_callback;
 
@@ -48,10 +57,8 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             memset(null_addr, 0, 6);
 
             gap_advertisements_set_params(adv_interval_min, adv_interval_max, 0, 0, null_addr, 0x07, 0x00); // 0x07 = 0b0111 --- 3 adv channels enabled (37, 38, 39)
-
-            assert(adv_data_len <= 31); 
-
             gap_advertisements_set_data(adv_data_len, (uint8_t*)adv_data); // Send advertizing data to client
+            gap_scan_response_set_data(scan_resp_data_len, (uint8_t*)scan_resp_data); // 
             gap_advertisements_enable(1);
             
             break;
@@ -72,11 +79,6 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 static uint16_t read_callback(hci_con_handle_t con_handler, uint16_t att_handler, uint16_t offset, uint8_t *buffer, uint16_t size) {
     UNUSED(con_handler);
 
-    if(att_handler == ATT_CHARACTERISTIC_12345678_1234_5678_1234_56789ABCFFFF_01_VALUE_HANDLE) {
-        uint8_t data = led_state == true ? 0x01 : 0x00;
-        return att_read_callback_handle_blob((uint8_t*)&led_state, sizeof(led_state), offset, buffer, size);
-    }
-
     return 0;
 }
 
@@ -85,9 +87,11 @@ static int write_callback(hci_con_handle_t con_handler, uint16_t att_handler, ui
     UNUSED(transaction_mode);
     UNUSED(size);
 
-    if(att_handler != ATT_CHARACTERISTIC_12345678_1234_5678_1234_56789ABCDEF1_01_VALUE_HANDLE) return 0;
+    if(att_handler != ATT_CHARACTERISTIC_00001525_1212_efde_1523_785feabcd123_01_VALUE_HANDLE) return 0;
 
-    led_state = (little_endian_read_16(buffer, 0) & 1) == 1 ? true : false;
+    printf("%d\n", little_endian_read_16(buffer, 0));
+
+    led_state = little_endian_read_16(buffer, 0);
     gpio_put(LED_PIN, led_state);
 
     return 0;
@@ -132,6 +136,8 @@ void setup() {
 int main()
 {
     stdio_init_all();
+
+    sleep_ms(2000);
 
     setup();
 
