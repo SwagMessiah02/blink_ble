@@ -32,6 +32,7 @@ static btstack_packet_callback_registration_t bstack_callback;
 bool le_connected = false;
 bool led_state = false;
 bool cyw_led_state = false;
+bool le_notification_enabled;
 
 static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size) {
     UNUSED(size);
@@ -64,6 +65,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
         case HCI_EVENT_DISCONNECTION_COMPLETE:
             if(!le_connected) break;
             le_connected = false; printf("DISCONNECTED\n"); 
+            le_notification_enabled = false;
             break;
         case HCI_TRUE_CONNECTION_COMPLETE:
             if(le_connected) break;
@@ -87,9 +89,7 @@ static int write_callback(hci_con_handle_t con_handler, uint16_t att_handler, ui
 
     if(att_handler != ATT_CHARACTERISTIC_00001525_1212_efde_1523_785feabcd123_01_VALUE_HANDLE) return 0;
 
-    printf("%d\n", little_endian_read_16(buffer, 0));
-
-    led_state = little_endian_read_16(buffer, 0);
+    led_state = little_endian_read_08(buffer, 0);
     gpio_put(LED_PIN, led_state);
 
     return 0;
