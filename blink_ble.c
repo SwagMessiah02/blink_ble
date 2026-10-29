@@ -9,7 +9,6 @@
 #define LED_PIN 12
 #define HEARTBEAT_PERIOD_MS 500
 #define HCI_TRUE_CONNECTION_COMPLETE 0x3E // Magic number. Don't ask why
-#define ADV_IND 0x06
 
 // Advertizing data must be 31 bytes long at top
 static uint8_t adv_data[] = {
