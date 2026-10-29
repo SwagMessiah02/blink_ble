@@ -32,7 +32,6 @@ static btstack_packet_callback_registration_t bstack_callback;
 bool le_connected = false;
 bool led_state = false;
 bool cyw_led_state = false;
-bool le_notification_enabled;
 
 static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size) {
     UNUSED(size);
@@ -65,7 +64,6 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
         case HCI_EVENT_DISCONNECTION_COMPLETE:
             if(!le_connected) break;
             le_connected = false; printf("DISCONNECTED\n"); 
-            le_notification_enabled = false;
             break;
         case HCI_TRUE_CONNECTION_COMPLETE:
             if(le_connected) break;
